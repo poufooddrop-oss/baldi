@@ -23,43 +23,12 @@
             height: 100%;
             display: block;
         }
-
-        /* Fullscreen button style */
-        #fullscreen-btn {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 9999;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: 2px solid white;
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-size: 16px;
-            font-family: sans-serif;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        #fullscreen-btn:hover {
-            background: white;
-            color: black;
-        }
     </style>
 </head>
 
 <body>
-    <div id="loading-text"
-        style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;">
-        LOADING...
-    </div>
-
-    <!-- Unity Canvas -->
+    <div id="loading-text" style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;"> LOADING... </div>
     <canvas id="unity-canvas" tabindex="-1"></canvas>
-
-    <!-- Fullscreen Button -->
-    <button id="fullscreen-btn">⛶ Fullscreen</button>
-
     <script src="Build/Export.loader.js"></script>
     <script>
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
@@ -68,67 +37,41 @@
             meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
             document.getElementsByTagName('head')[0].appendChild(meta);
         }
-
         const loadingText = document.querySelector("#loading-text");
-        const fullscreenBtn = document.querySelector("#fullscreen-btn");
-        const unityCanvas = document.querySelector("#unity-canvas");
         let totalBytes = 0;
         let loadedBytes = 0;
 
-        // Prevent ESC from exiting fullscreen
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape" && document.fullscreenElement) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        }, true);
-
-        // Fullscreen button handler
-        fullscreenBtn.addEventListener("click", () => {
-            if (!document.fullscreenElement) {
-                unityCanvas.requestFullscreen().catch(err => {
-                    alert(`Error attempting to enable fullscreen: ${err.message}`);
-                });
-                fullscreenBtn.textContent = "🗗 Exit Fullscreen";
-            } else {
-                document.exitFullscreen();
-                fullscreenBtn.textContent = "⛶ Fullscreen";
-            }
-        });
-
-        // Keep button text synced with fullscreen state
-        document.addEventListener("fullscreenchange", () => {
-            if (!document.fullscreenElement) {
-                fullscreenBtn.textContent = "⛶ Fullscreen";
-            } else {
-                fullscreenBtn.textContent = "🗗 Exit Fullscreen";
-            }
-        });
-
         function formatSize(bytes) {
-            if (bytes > 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
-            else if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + " MB";
-            else if (bytes > 1024) return (bytes / 1024).toFixed(2) + " KB";
-            else return bytes + " B";
+            if (bytes > 1024 * 1024 * 1024) {
+                return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+            } else if (bytes > 1024 * 1024) {
+                return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+            } else if (bytes > 1024) {
+                return (bytes / 1024).toFixed(2) + " KB";
+            } else {
+                return bytes + " B";
+            }
         }
-
         async function getSize(url) {
             try {
-                const res = await fetch(url, { method: "HEAD" });
+                const res = await fetch(url, {
+                    method: "HEAD"
+                });
                 return parseInt(res.headers.get("Content-Length") || "0", 10);
             } catch {
                 return 0;
             }
         }
-
         async function fetchWithProgress(url) {
             const response = await fetch(url);
             const reader = response.body.getReader();
             let chunks = [];
             let received = 0;
             while (true) {
-                const { done, value } = await reader.read();
+                const {
+                    done,
+                    value
+                } = await reader.read();
                 if (done) break;
                 received += value.length;
                 loadedBytes += value.length;
@@ -146,7 +89,6 @@
             }
             return fullBuffer.buffer;
         }
-
         async function mergeFiles(parts) {
             const buffers = await Promise.all(parts.map(fetchWithProgress));
             return URL.createObjectURL(new Blob(buffers));
@@ -159,7 +101,6 @@
             }
             return parts;
         }
-
         (async () => {
             const dataParts = getParts("Build/Export.data", 2);
             const wasmParts = getParts("Build/Export.wasm", 3);
@@ -170,7 +111,7 @@
                 mergeFiles(dataParts),
                 mergeFiles(wasmParts)
             ]);
-            createUnityInstance(unityCanvas, {
+            createUnityInstance(document.querySelector("#unity-canvas"), {
                 dataUrl: dataUrl,
                 frameworkUrl: "Build/Export.framework.js",
                 codeUrl: wasmUrl,
