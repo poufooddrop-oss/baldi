@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <title>Unity WebGL Player | Baldi's Basics Plus</title>
 
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+
     <style>
         html, body {
             margin: 0;
@@ -19,37 +21,26 @@
         }
 
         #game-container {
-            width: 1280px;
-            height: 720px;
-            position: relative;
+            width: 854px;
+            height: 480px;
             background: black;
+            position: relative;
         }
 
         #unity-canvas {
-            width: 1280px;
-            height: 720px;
+            width: 854px;
+            height: 480px;
             display: block;
-        }
-
-        :fullscreen #game-container {
-            width: 100vw;
-            height: 100vh;
-        }
-
-        :fullscreen #unity-canvas {
-            width: 100%;
-            height: 100%;
         }
 
         #fullscreen-btn {
             position: absolute;
-            bottom: 16px;
-            right: 16px;
-            z-index: 10;
-            padding: 10px 18px;
-            font-size: 15px;
+            bottom: 12px;
+            right: 12px;
+            padding: 8px 14px;
+            font-size: 14px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #0078ff;
             color: white;
             cursor: pointer;
@@ -60,22 +51,29 @@
 
 <body>
     <div id="game-container">
-        <div id="loading-text" style="color:white;font-size:48px;font-family:cursive;text-align:center;margin-top:20px;">
+        <div id="loading-text" style="color:white;font-size:32px;font-family:sans-serif;text-align:center;margin-top:20px;">
             LOADING...
         </div>
 
         <canvas id="unity-canvas" tabindex="-1"></canvas>
-
         <button id="fullscreen-btn">Fullscreen</button>
     </div>
 
     <script src="Build/Export.loader.js"></script>
 
     <script>
+        const ua = navigator.userAgent.toLowerCase()
+        const isSwitch = ua.includes("nintendo")
+
         const container = document.getElementById("game-container")
         const canvas = document.getElementById("unity-canvas")
         const fsBtn = document.getElementById("fullscreen-btn")
         const loadingText = document.getElementById("loading-text")
+
+        if (isSwitch) {
+            fsBtn.style.display = "none"
+            document.body.style.zoom = "0.9"
+        }
 
         fsBtn.onclick = () => {
             if (!document.fullscreenElement) {
@@ -90,8 +88,8 @@
         document.addEventListener("fullscreenchange", () => {
             if (!document.fullscreenElement) {
                 fsBtn.textContent = "Fullscreen"
-                canvas.style.width = "1280px"
-                canvas.style.height = "720px"
+                canvas.style.width = "854px"
+                canvas.style.height = "480px"
             }
         })
 
@@ -126,14 +124,17 @@
                 received += value.length
                 loadedBytes += value.length
                 chunks.push(value)
-                loadingText.textContent =
-                    "LOADING... " +
-                    formatSize(loadedBytes) +
-                    " / " +
-                    formatSize(totalBytes) +
-                    " (" +
-                    ((loadedBytes / totalBytes) * 100).toFixed(1) +
-                    "%)"
+
+                if (!isSwitch) {
+                    loadingText.textContent =
+                        "LOADING... " +
+                        formatSize(loadedBytes) +
+                        " / " +
+                        formatSize(totalBytes) +
+                        " (" +
+                        ((loadedBytes / totalBytes) * 100).toFixed(1) +
+                        "%)"
+                }
             }
 
             let buffer = new Uint8Array(received)
@@ -174,7 +175,13 @@
                 companyName: "Basically Games",
                 productName: "Baldi's Basics Plus",
                 productVersion: "0.3.2",
-            }).then(() => loadingText.remove())
+                devicePixelRatio: 1,
+                matchWebGLToCanvasSize: true,
+            }).then(() => {
+                loadingText.remove()
+            }).catch(() => {
+                loadingText.textContent = "FAILED TO LOAD"
+            })
         })()
     </script>
 </body>
